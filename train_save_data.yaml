@@ -1,5 +1,6 @@
 dataset_type: 'MetaDataset'
 dataset_params:
+  rootdir: 'datasets/ILSVRC2012' 
   meta: 'train.json'
 transform_params:
   transform_list: ['Scale','CenterCrop', 'ToTensor', 'Normalize']
@@ -10,5 +11,5 @@ transform_params:
 data_loader_params:
   batch_size: 64
   shuffle: False
-  num_workers: 6
+  num_workers: 12
   pin_memory: True

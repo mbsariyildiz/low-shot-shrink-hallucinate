@@ -6,7 +6,6 @@
 
 import torch
 import numpy as np
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim
 import h5py
@@ -15,6 +14,7 @@ import argparse
 import torch.utils.data.sampler
 import os
 import generation
+
 class SimpleHDF5Dataset:
     def __init__(self, file_handle):
         self.f = file_handle
@@ -97,8 +97,8 @@ def training_loop(lowshot_dataset, num_classes, params, batchsize=1000, maxiters
         (x,y) = lowshot_dataset.get_sample(batchsize)
         optimizer.zero_grad()
 
-        x = Variable(x.cuda())
-        y = Variable(y.cuda())
+        x = x.cuda()
+        y = y.cuda()
         scores = model(x)
 
         loss = loss_function(scores,y)
@@ -124,7 +124,7 @@ def eval_loop(data_loader, model, base_classes, novel_classes):
     top5 = None
     all_labels = None
     for i, (x,y) in enumerate(data_loader):
-        x = Variable(x.cuda())
+        x = x.cuda()
         scores = model(x)
         top1_this, top5_this = perelement_accuracy(scores.data, y)
         top1 = top1_this if top1 is None else np.concatenate((top1, top1_this))

@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 import os
 identity = lambda x:x
 class MetaDataset:
-    def __init__(self, rootdir='/mnt/fair/imagenet-256', meta='/home/bharathh/imagenet_meta/train.json', transform=transforms.ToTensor(), target_transform=identity):
+    def __init__(self, rootdir='./datasets/ILSVRC2012', meta='train.json', transform=transforms.ToTensor(), target_transform=identity):
         with open(meta, 'r') as f:
             self.meta = json.load(f)
         self.rootdir=rootdir

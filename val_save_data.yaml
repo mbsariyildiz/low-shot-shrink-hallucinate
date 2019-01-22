@@ -1,5 +1,6 @@
 dataset_type: 'MetaDataset'
 dataset_params:
+  rootdir: 'datasets/ILSVRC2012' 
   meta: 'val.json'
 transform_params:
   transform_list: ['Scale','CenterCrop', 'ToTensor', 'Normalize']

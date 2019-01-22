@@ -6,8 +6,6 @@
 
 
 import torch
-from torch.autograd import Variable
-import myMetaDataset
 import ResNetFeat
 import yaml
 import data
@@ -21,23 +19,24 @@ def save_features(model, data_loader, outfile ):
     f = h5py.File(outfile, 'w')
     max_count = len(data_loader)*data_loader.batch_size
     all_labels = f.create_dataset('all_labels',(max_count,), dtype='i')
-    all_feats=None
-    count=0
-    for i, (x,y) in enumerate(data_loader):
-        if i%10 == 0:
-            print('{:d}/{:d}'.format(i, len(data_loader)))
-        x = x.cuda()
-        x_var = Variable(x)
-        scores, feats = model(x_var)
-        if all_feats is None:
-            all_feats = f.create_dataset('all_feats', (max_count, feats.size(1)), dtype='f')
-        all_feats[count:count+feats.size(0),:] = feats.data.cpu().numpy()
-        all_labels[count:count+feats.size(0)] = y.cpu().numpy()
-        count = count + feats.size(0)
+    all_feats = None
+    count = 0
+
+    with torch.no_grad():
+        for i, (x,y) in enumerate(data_loader):
+            if i % 10 == 0:
+                print('{:d}/{:d}'.format(i, len(data_loader)))
+            
+            x = x.cuda()
+            scores, feats = model(x)
+            if all_feats is None:
+                all_feats = f.create_dataset('all_feats', (max_count, feats.size(1)), dtype='f')
+            all_feats[count:count+feats.size(0),:] = feats.data.cpu().numpy()
+            all_labels[count:count+feats.size(0)] = y.cpu().numpy()
+            count = count + feats.size(0)
 
     count_var = f.create_dataset('count', (1,), dtype='i')
     count_var[0] = count
-
     f.close()
 
 def get_model(model_name, num_classes):
@@ -47,8 +46,6 @@ def get_model(model_name, num_classes):
                 ResNet50 = ResNetFeat.ResNet50,
                 ResNet101 = ResNetFeat.ResNet101)
     return model_dict[model_name](num_classes, False)
-
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Save features')
@@ -68,8 +65,6 @@ if __name__ == '__main__':
     model = get_model(params.model, params.num_classes)
     model = model.cuda()
     model = torch.nn.DataParallel(model)
-    from torch.utils.serialization import load_lua
-    #tmp = load_lua('/home/bharathh/local/cachedir/from_lua.t7')
     tmp = torch.load(params.modelfile)
     if ('module.classifier.bias' not in model.state_dict().keys()) and ('module.classifier.bias' in tmp['state'].keys()):
         tmp['state'].pop('module.classifier.bias')
