@@ -4,11 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-
-
 import ResNetFeat
 import torch
-from torch.autograd import Variable
 import myMetaDataset
 import data
 import torch.optim
@@ -28,7 +25,6 @@ def accuracy(scores, labels):
     top5_correct = np.sum(topk_ind == label_ind.reshape((-1,1)))
     return float(top1_correct), float(top5_correct)
 
-
 def adjust_learning_rate(optimizer, epoch, params):
     lr = params.lr * (params.lr_decay ** (epoch // params.step_size))
     if epoch<params.warmup_epochs:
@@ -36,25 +32,16 @@ def adjust_learning_rate(optimizer, epoch, params):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-
-
-
-
-
-
-
 def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, stop_epoch, params):
     # init timing
     data_time = 0
     sgd_time = 0
-    test_time = 0
-
+    test_time = 0 
 
     optimizer = torch.optim.SGD(model.parameters(), params.lr, momentum=params.momentum, weight_decay=params.weight_decay, dampening=params.dampening)
     for epoch in range(start_epoch,stop_epoch):
         adjust_learning_rate(optimizer, epoch, params)
         model.train()
-
 
         # start timing
         data_time=0
@@ -70,10 +57,8 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
             y = y.cuda()
             start_sgd_time=time.time()
             optimizer.zero_grad()
-            x_var = Variable(x)
-            y_var = Variable(y)
 
-            loss = loss_fn(model, x_var, y_var)
+            loss = loss_fn(model, x, y)
             loss.backward()
             optimizer.step()
             sgd_time = sgd_time + (time.time()-start_sgd_time)
@@ -85,7 +70,6 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
                 print('Epoch {:d}/{:d} | Batch {:d}/{:d} | Loss {:f} | Data time {:f} | SGD time {:f}'.format(epoch,
                     stop_epoch, i, len(train_loader), avg_loss/float(i+1), data_time/float(i+1), sgd_time/float(i+1)))
             start_data_time = time.time()
-
 
         #test
         model.eval()
@@ -99,8 +83,7 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
             x = x.cuda()
             y = y.cuda()
             start_test_time = time.time()
-            x_var = Variable(x)
-            scores = model(x_var)[0]
+            scores = model(x)[0]
             top1_this, top5_this = accuracy(scores.data, y)
             top1 = top1+top1_this
             top5 = top5+top5_this
@@ -109,7 +92,6 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
             if (i%params.print_freq==0) or (i==len(val_loader)-1):
                 print('Epoch {:d}/{:d} | Batch {:d}/{:d} | Top-1 {:f} | Top-5 {:f} | Data time {:f} | Test time {:f}'.format(epoch,
                     stop_epoch, i, len(val_loader), top1/float(count), top5/float(count), data_time/float(i+1), test_time/float(i+1)))
-
 
 
         if (epoch % params.save_freq==0) or (epoch==stop_epoch-1):
@@ -144,10 +126,7 @@ def parse_args():
     parser.add_argument('--dampening', default=0, type=float, help='dampening')
     parser.add_argument('--warmup_epochs', default=0, type=int, help='iters for warmup')
     parser.add_argument('--warmup_lr', default=0.01, type=int, help='lr for warmup')
-
     return parser.parse_args()
-
-
 
 
 def isfile(x):
@@ -166,8 +145,6 @@ def get_model(model_name, num_classes):
     return model_dict[model_name](num_classes, False)
 
 
-
-
 def get_resume_file(filename):
     if isfile(filename):
         return filename
@@ -181,8 +158,6 @@ def get_resume_file(filename):
     return resume_file
 
 
-
-
 if __name__=='__main__':
     np.random.seed(10)
     params = parse_args()
@@ -190,7 +165,7 @@ if __name__=='__main__':
         train_data_params = yaml.load(f)
     with open(params.valcfg,'r') as f:
         val_data_params = yaml.load(f)
-
+    
     train_loader = data.get_data_loader(train_data_params)
     val_loader = data.get_data_loader(val_data_params)
     model = get_model(params.model, params.num_classes)
@@ -199,9 +174,9 @@ if __name__=='__main__':
 
     loss_fn = losses.GenericLoss(params.aux_loss_type, params.aux_loss_wt, params.num_classes)
 
-
     if not os.path.isdir(params.checkpoint_dir):
         os.makedirs(params.checkpoint_dir)
+
     start_epoch = params.start_epoch
     stop_epoch = params.stop_epoch
     if params.allow_resume:

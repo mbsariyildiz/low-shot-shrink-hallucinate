@@ -1,7 +1,7 @@
 dataset_type: 'MetaDataset'
 dataset_params:
   meta: 'base_classes_train_meta.json'
-  rootdir: '/mnt/fair/imagenet-256' # Change this to ImageNet directory
+  rootdir: 'datasets/ILSVRC2012' 
 transform_params:
   transform_list: ['RandomSizedCrop', 'ImageJitter', 'RandomHorizontalFlip', 'ToTensor', 'Normalize']
   image_size: 224
@@ -14,5 +14,5 @@ transform_params:
 data_loader_params:
   batch_size: 100
   shuffle: True
-  num_workers: 12
+  num_workers: 8
   pin_memory: True

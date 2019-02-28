@@ -12,6 +12,7 @@ import torchvision.transforms as transforms
 import myMetaDataset
 import torchvision.datasets as dsets
 import additional_transforms
+
 dataset_dict = dict(MetaDataset=myMetaDataset.MetaDataset,
                     CocoDetection=dsets.CocoDetection,
                     CocoCaptions=dsets.CocoCaptions,
@@ -36,7 +37,6 @@ def parse_transform(transform_type, transform_params):
         return method()
 
 
-
 def get_data_loader(params):
     dataset_type=params['dataset_type']
     dataset_params=params['dataset_params']
@@ -44,11 +44,9 @@ def get_data_loader(params):
     transform_list = [parse_transform(x, transform_params) for x in transform_params['transform_list']]
     transform = transforms.Compose(transform_list)
 
-
     dataset = dataset_dict[dataset_type](transform=transform, **dataset_params)
     data_loader_params = params['data_loader_params']
     data_loader = torch.utils.data.DataLoader(dataset, **data_loader_params)
     return data_loader
-
 
 

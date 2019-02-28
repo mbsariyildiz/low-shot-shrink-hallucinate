@@ -180,7 +180,8 @@ if __name__ == '__main__':
     else:
         novel_classes = lowshotmeta['novel_classes_1']
         base_classes = lowshotmeta['base_classes_1']
-
+    
+    import pdb; pdb.set_trace()
     novel_idx = np.sort(novel_idx[novel_classes,:].reshape(-1))
 
     generator=None

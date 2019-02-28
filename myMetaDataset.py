@@ -11,8 +11,11 @@ import json
 import numpy as np
 import torchvision.transforms as transforms
 import os
+
 identity = lambda x:x
+
 class MetaDataset:
+
     def __init__(self, rootdir='./datasets/ILSVRC2012', meta='train.json', transform=transforms.ToTensor(), target_transform=identity):
         with open(meta, 'r') as f:
             self.meta = json.load(f)
@@ -30,11 +33,5 @@ class MetaDataset:
 
     def __len__(self):
         return len(self.meta['image_names'])
-
-
-
-
-
-
 
 

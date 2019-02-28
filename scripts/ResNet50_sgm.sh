@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # ResNet50 baseline and generation
 # Hyperparameters to be aware of:
 # lr = 0.1, warmup_epochs = 1, aux_loss_wt = 0.005 for main.py
@@ -11,6 +9,7 @@
 
 
 # First train representation
+: '
 mkdir -p checkpoints/ResNet50_sgm
 python ./main.py --model ResNet50_sgm \
   --traincfg base_classes_train_template_smallbatch.yaml \
@@ -19,6 +18,7 @@ python ./main.py --model ResNet50_sgm \
   --aux_loss_wt 0.005 --aux_loss_type sgm \
   --lr 0.1 --warmup_epochs 1 \
   --checkpoint_dir checkpoints/ResNet50_sgm
+'
 
 
 # Next save features
@@ -32,8 +32,10 @@ python ./save_features.py \
   --cfg val_save_data.yaml \
   --outfile features/ResNet50_sgm/val.hdf5 \
   --modelfile checkpoints/ResNet50_sgm/89.tar \
-  --model ResNet50_sgm
+  --model ResNet50
 
+
+: '
 # Low-shot benchmark without generation
 for i in {1..5}
 do
@@ -49,6 +51,7 @@ do
       --testsetup 1
   done
 done
+
 
 # parse results
 echo "ResNet50 results (no generation)"
@@ -87,13 +90,14 @@ do
   done
 done
 
+
 # parse results
 echo "ResNet50 results (with generation)"
 python ./parse_results.py --resultsdir results \
   --repr ResNet50_sgm \
   --lr 0.1 --wd 0.001 \
   --max_per_label 5
-
+'
 
 
 

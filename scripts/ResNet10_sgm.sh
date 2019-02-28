@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # ResNet10 with SGM loss and generation
 # Hyperparameters to be aware of:
 # aux_loss_wt = 0.02 for main.py
@@ -11,13 +9,13 @@
 
 
 # First train representation
-mkdir -p checkpoints/ResNet10_sgm
-python ./main.py --model ResNet10 \
-  --traincfg base_classes_train_template.yaml \
-  --valcfg base_classes_val_template.yaml \
-  --print_freq 10 --save_freq 10 \
-  --aux_loss_wt 0.02 --aux_loss_type sgm \
-  --checkpoint_dir checkpoints/ResNet10_sgm
+# mkdir -p checkpoints/ResNet10_sgm
+# python ./main.py --model ResNet10 \
+#   --traincfg base_classes_train_template.yaml \
+#   --valcfg base_classes_val_template.yaml \
+#   --print_freq 10 --save_freq 10 \
+#   --aux_loss_wt 0.02 --aux_loss_type sgm \
+#   --checkpoint_dir checkpoints/ResNet10_sgm
 
 
 # Next save features
@@ -33,6 +31,7 @@ python ./save_features.py \
   --modelfile checkpoints/ResNet10_sgm/89.tar \
   --model ResNet10
 
+: '
 # Low-shot benchmark without generation
 for i in {1..5}
 do
@@ -93,8 +92,4 @@ python ./parse_results.py --resultsdir results \
   --lr 1 --wd 0.001 \
   --max_per_label 5
 
-
-
-
-
-
+'

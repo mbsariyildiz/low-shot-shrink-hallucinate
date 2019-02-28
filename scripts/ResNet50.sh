@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # ResNet50 baseline and generation
 # Hyperparameters to be aware of:
 # lr = 0.1, warmup_epochs = 1 for main.py
@@ -21,6 +19,7 @@ python ./main.py --model ResNet50 \
 
 
 # Next save features
+: '
 mkdir -p features/ResNet50
 python ./save_features.py \
   --cfg train_save_data.yaml \
@@ -32,8 +31,10 @@ python ./save_features.py \
   --outfile features/ResNet50/val.hdf5 \
   --modelfile checkpoints/ResNet50/89.tar \
   --model ResNet50
+'
 
 # Low-shot benchmark without generation
+: '
 for i in {1..5}
 do
   for j in 1 2 5 10 20
@@ -48,25 +49,31 @@ do
       --testsetup 1
   done
 done
+'
+
 
 # parse results
+: '
 echo "ResNet50 results (no generation)"
 python ./parse_results.py --resultsdir results \
   --repr ResNet50 \
   --lr 0.1 --wd 0.01
+'
 
 
 # Train analogy-based generator
+: '
 mkdir generation
 python ./train_analogy_generator.py \
   --lowshotmeta label_idx.json \
   --trainfile features/ResNet50/train.hdf5 \
   --outdir generation \
   --networkfile checkpoints/ResNet50/89.tar
-
+'
 
 
 # Low-shot benchmark _with_ generation
+: '
 for i in {1..5}
 do
   for j in 1 2 5 10 20
@@ -84,14 +91,17 @@ do
       --generator_file generation/ResNet50/generator.tar
   done
 done
+'
+
 
 # parse results
+: '
 echo "ResNet50 results (with generation)"
 python ./parse_results.py --resultsdir results \
   --repr ResNet50 \
   --lr 0.1 --wd 0.01 \
   --max_per_label 20
-
+'
 
 
 

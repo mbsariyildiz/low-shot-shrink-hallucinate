@@ -17,12 +17,14 @@ import h5py
 def save_features(model, data_loader, outfile ):
 
     f = h5py.File(outfile, 'w')
-    max_count = len(data_loader)*data_loader.batch_size
-    all_labels = f.create_dataset('all_labels',(max_count,), dtype='i')
+    max_count = len(data_loader) * data_loader.batch_size
+    all_labels = f.create_dataset('all_labels', (max_count,), dtype='i')
     all_feats = None
     count = 0
 
     with torch.no_grad():
+        W = f.create_dataset('W', data=model.module.classifier.weight.cpu().numpy())
+
         for i, (x,y) in enumerate(data_loader):
             if i % 10 == 0:
                 print('{:d}/{:d}'.format(i, len(data_loader)))
@@ -61,18 +63,20 @@ if __name__ == '__main__':
     with open(params.cfg,'r') as f:
         data_params = yaml.load(f)
 
-    data_loader = data.get_data_loader(data_params)
     model = get_model(params.model, params.num_classes)
     model = model.cuda()
     model = torch.nn.DataParallel(model)
+   
     tmp = torch.load(params.modelfile)
     if ('module.classifier.bias' not in model.state_dict().keys()) and ('module.classifier.bias' in tmp['state'].keys()):
         tmp['state'].pop('module.classifier.bias')
-
     model.load_state_dict(tmp['state'])
     model.eval()
 
     dirname = os.path.dirname(params.outfile)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
+
+    data_loader = data.get_data_loader(data_params)
+
     save_features(model, data_loader, params.outfile)
