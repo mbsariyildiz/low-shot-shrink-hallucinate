@@ -44,11 +44,11 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
         model.train()
 
         # start timing
-        data_time=0
-        sgd_time=0
-        test_time=0
-        start_data_time=time.time()
-        avg_loss=0
+        data_time = 0
+        sgd_time = 0
+        test_time = 0
+        start_data_time = time.time()
+        avg_loss = 0
 
         #train
         for i, (x,y) in enumerate(train_loader):
@@ -63,7 +63,7 @@ def main_training_loop(train_loader, val_loader, model, loss_fn, start_epoch, st
             optimizer.step()
             sgd_time = sgd_time + (time.time()-start_sgd_time)
 
-            avg_loss = avg_loss+loss.data[0]
+            avg_loss = avg_loss + loss.item()
 
             if i % params.print_freq==0:
                 print(optimizer.state_dict()['param_groups'][0]['lr'])
