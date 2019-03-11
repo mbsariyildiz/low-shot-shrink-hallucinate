@@ -19,9 +19,9 @@ class ResNetFeat(ResNetBasic.ResNet):
 
     def forward(self, x):
         out = self.trunk(x)
+        out = out.view(out.size(0), -1)
         if self.only_trunk:
             return out
-        out = out.view(out.size(0),-1)
         scores = self.classifier(out)
         return scores, out
 

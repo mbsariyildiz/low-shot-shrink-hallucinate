@@ -116,7 +116,7 @@ class BottleneckBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self,block,list_of_num_layers, list_of_out_dims, num_classes=1000, only_trunk=False ):
+    def __init__(self,block,list_of_num_layers, list_of_out_dims, num_classes=1000, only_trunk=False, classifier_bias=True):
         # list_of_num_layers specifies number of layers in each stage
         # list_of_out_dims specifies number of output channel for each stage
         super(ResNet,self).__init__()
@@ -136,46 +136,34 @@ class ResNet(nn.Module):
         trunk = [conv1, bn1, relu, pool1]
         indim = 64
         for i in range(4):
-
             for j in range(list_of_num_layers[i]):
                 half_res = (i>=1) and (j==0)
                 B = block(indim, list_of_out_dims[i], half_res)
                 trunk.append(B)
                 indim = list_of_out_dims[i]
 
-
-
-        self.only_trunk=only_trunk
-        if not only_trunk:
-            avgpool = nn.AvgPool2d(7)
-            trunk.append(avgpool)
-
+        trunk.append(nn.AvgPool2d(7))
         self.trunk = nn.Sequential(*trunk)
+
         self.final_feat_dim = indim
-        if not only_trunk:
-            self.classifier = nn.Linear(indim, num_classes)
-            self.classifier.bias.data.fill_(0)
+        self.d_ft = indim
+
+        if not self.only_trunk:
+            self.classifier = nn.Linear(indim, num_classes, bias=classifier_bias)
+            if classifier_bias: self.classifier.bias.data.fill_(0)
 
     def forward(self,x):
         out = self.trunk(x)
-        if self.only_trunk:
-            return out
-        out = out.view(out.size(0),-1)
+        out = out.view(out.size(0), -1)
+        if self.only_trunk: return out
         scores = self.classifier(out)
         return scores
 
-
-def ResNet10(num_classes=1000, only_trunk=False):
-    return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], num_classes, only_trunk)
-
-def ResNet18(num_classes=1000):
-    return ResNet(SimpleBlock, [2,2,2,2],[64,128,256,512],num_classes)
-
-def ResNet34(num_classes=1000):
-    return ResNet(SimpleBlock, [3,4,6,3],[64,128,256,512],num_classes)
+def ResNet10(num_classes=1000, only_trunk=False, classifier_bias=True):
+    return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], num_classes, only_trunk, classifier_bias)
 
 def ResNet50(num_classes=1000):
-    return ResNet(BottleneckBlock, [3,4,6,3], [256,512,1024,2048], num_classes)
+    return ResNet(BottleneckBlock, [3,4,6,3], [256,512,1024,2048], num_classes, only_trunk, classifier_bias)
 
 def ResNet101(num_classes=1000):
     return ResNet(BottleneckBlock, [3,4,23,3],[256,512,1024,2048], num_classes)

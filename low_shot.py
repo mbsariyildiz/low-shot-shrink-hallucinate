@@ -21,7 +21,10 @@ class SimpleHDF5Dataset:
         self.all_feats_dset = self.f['all_feats'][...]
         self.all_labels = self.f['all_labels'][...]
         self.total = self.f['count'][0]
-        print('here')
+        print('all_feats.shape:', self.all_feats_dset.shape)
+        print('all_labels.shape:', self.all_labels.shape)
+        print('total:', self.total)
+
     def __getitem__(self, i):
         return torch.Tensor(self.all_feats_dset[i,:]), int(self.all_labels[i])
 
@@ -34,15 +37,13 @@ class SimpleHDF5Dataset:
 class LowShotDataset:
     def __init__(self, file_handle, base_classes, novel_classes, novel_idx, max_per_label=0, generator_fn=None, generator=None):
         self.f = file_handle
-        self.all_feats_dset = self.f['all_feats']
-        all_labels_dset = self.f['all_labels']
-        self.all_labels = all_labels_dset[...]
+        self.all_feats_dset = self.f['all_feats'][:]
+        self.all_labels = self.f['all_labels'][:]
 
         #base class examples
         self.base_class_ids = np.where(np.in1d(self.all_labels, base_classes))[0]
         total = self.f['count'][0]
         self.base_class_ids = self.base_class_ids[self.base_class_ids<total]
-
 
         # novel class examples
         novel_feats = self.all_feats_dset[novel_idx,:]
@@ -87,12 +88,10 @@ def get_test_loader(file_handle, batch_size=1000):
 
 def training_loop(lowshot_dataset, num_classes, params, batchsize=1000, maxiters=1000):
     featdim = lowshot_dataset.featdim()
-    model = nn.Linear(featdim, num_classes)
-    model = model.cuda()
+    model = nn.Linear(featdim, num_classes).cuda()
     optimizer = torch.optim.SGD(model.parameters(), params.lr, momentum=params.momentum, dampening=params.momentum, weight_decay=params.wd)
+    loss_function = nn.CrossEntropyLoss().cuda()
 
-    loss_function = nn.CrossEntropyLoss()
-    loss_function = loss_function.cuda()
     for i in range(maxiters):
         (x,y) = lowshot_dataset.get_sample(batchsize)
         optimizer.zero_grad()
@@ -105,7 +104,7 @@ def training_loop(lowshot_dataset, num_classes, params, batchsize=1000, maxiters
         loss.backward()
         optimizer.step()
         if (i%100==0):
-            print('{:d}: {:f}'.format(i, loss.data[0]))
+            print('{:d}: {:f}'.format(i, loss.data.item()))
 
     return model
 
@@ -181,7 +180,6 @@ if __name__ == '__main__':
         novel_classes = lowshotmeta['novel_classes_1']
         base_classes = lowshotmeta['base_classes_1']
     
-    import pdb; pdb.set_trace()
     novel_idx = np.sort(novel_idx[novel_classes,:].reshape(-1))
 
     generator=None
@@ -195,15 +193,18 @@ if __name__ == '__main__':
         lowshot_dataset = LowShotDataset(f, base_classes, novel_classes, novel_idx, params.max_per_label, generator_fn, generator)
         model = training_loop(lowshot_dataset, params.numclasses, params, params.batchsize, params.maxiters)
 
+    modelrootdir = os.path.basename(os.path.dirname(params.trainfile))
+    model_save_path = os.path.join(params.outdir, modelrootdir+'_lr_{:.3f}_wd_{:.3f}_expid_{:d}_lowshotn_{:d}_maxgen_{:d}.ckpt'.format(
+                                   params.lr, params.wd, params.experimentid, params.lowshotn, params.max_per_label))
+    torch.save({'model':model.state_dict()}, model_save_path)
+
     print('trained')
     with h5py.File(params.testfile, 'r') as f:
         test_loader = get_test_loader(f)
         accs = eval_loop(test_loader, model, base_classes, novel_classes)
 
-    modelrootdir = os.path.basename(os.path.dirname(params.trainfile))
     outpath = os.path.join(params.outdir, modelrootdir+'_lr_{:.3f}_wd_{:.3f}_expid_{:d}_lowshotn_{:d}_maxgen_{:d}.json'.format(
                                     params.lr, params.wd, params.experimentid, params.lowshotn, params.max_per_label))
     with open(outpath, 'w') as f:
         json.dump(dict(lr=params.lr,wd=params.wd, expid=params.experimentid, lowshotn=params.lowshotn, accs=accs.tolist()),f)
-
 
