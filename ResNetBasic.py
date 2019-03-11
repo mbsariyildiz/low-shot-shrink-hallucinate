@@ -22,12 +22,11 @@ def init_layer(L):
         L.bias.data.fill_(0)
 
 
-
-
 # Simple ResNet Block
 class SimpleBlock(nn.Module):
+
     def __init__(self, indim, outdim, half_res):
-        super(SimpleBlock, self).__init__()
+        super().__init__()
         self.indim = indim
         self.outdim = outdim
         self.C1 = nn.Conv2d(indim, outdim, kernel_size=3, stride=2 if half_res else 1, padding=1, bias=False)
@@ -42,7 +41,7 @@ class SimpleBlock(nn.Module):
         self.half_res = half_res
 
         # if the input number of channels is not equal to the output, then need a 1x1 convolution
-        if indim!=outdim:
+        if indim != outdim:
             self.shortcut = nn.Conv2d(indim, outdim, 1, 2 if half_res else 1, bias=False)
             self.parametrized_layers.append(self.shortcut)
             self.BNshortcut = nn.BatchNorm2d(outdim)
@@ -66,11 +65,11 @@ class SimpleBlock(nn.Module):
         return out
 
 
-
 # Bottleneck block
 class BottleneckBlock(nn.Module):
+
     def __init__(self, indim, outdim, half_res):
-        super(BottleneckBlock, self).__init__()
+        super().__init__()
         bottleneckdim = int(outdim/4)
         self.indim = indim
         self.outdim = outdim
@@ -87,7 +86,7 @@ class BottleneckBlock(nn.Module):
 
 
         # if the input number of channels is not equal to the output, then need a 1x1 convolution
-        if indim!=outdim:
+        if indim != outdim:
             self.shortcut = nn.Conv2d(indim, outdim, 1, stride=2 if half_res else 1, bias=False)
             self.parametrized_layers.append(self.shortcut)
             self.shortcut_type = '1x1'
@@ -99,7 +98,6 @@ class BottleneckBlock(nn.Module):
 
 
     def forward(self, x):
-
         short_out = x if self.shortcut_type == 'identity' else self.shortcut(x)
         out = self.C1(x)
         out = self.BN1(out)
@@ -110,28 +108,27 @@ class BottleneckBlock(nn.Module):
         out = self.C3(out)
         out = self.BN3(out)
         out = out + short_out
-
         out = self.relu(out)
         return out
 
 
 class ResNet(nn.Module):
+
     def __init__(self,block,list_of_num_layers, list_of_out_dims, num_classes=1000, only_trunk=False, classifier_bias=True):
         # list_of_num_layers specifies number of layers in each stage
         # list_of_out_dims specifies number of output channel for each stage
-        super(ResNet,self).__init__()
+        super().__init__()
+        self.only_trunk = only_trunk
         self.grads = []
         self.fmaps = []
         assert len(list_of_num_layers)==4, 'Can have only four stages'
-        conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                                               bias=False)
+        conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         bn1 = nn.BatchNorm2d(64)
         relu = nn.ReLU()
         pool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         init_layer(conv1)
         init_layer(bn1)
-
 
         trunk = [conv1, bn1, relu, pool1]
         indim = 64
@@ -148,7 +145,7 @@ class ResNet(nn.Module):
         self.final_feat_dim = indim
         self.d_ft = indim
 
-        if not self.only_trunk:
+        if not only_trunk:
             self.classifier = nn.Linear(indim, num_classes, bias=classifier_bias)
             if classifier_bias: self.classifier.bias.data.fill_(0)
 
