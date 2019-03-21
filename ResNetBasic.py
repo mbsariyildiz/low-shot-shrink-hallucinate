@@ -149,12 +149,17 @@ class ResNet(nn.Module):
             self.classifier = nn.Linear(indim, num_classes, bias=classifier_bias)
             if classifier_bias: self.classifier.bias.data.fill_(0)
 
-    def forward(self,x):
-        out = self.trunk(x)
-        out = out.view(out.size(0), -1)
-        if self.only_trunk: return out
-        scores = self.classifier(out)
-        return scores
+
+    def features(self, x):
+        x = self.trunk(x)
+        x = x.view(x.size(0), -1)
+        return x
+
+    def forward(self, x):
+        x = self.features(x)
+        if self.only_trunk: return x
+        x = self.classifier(x)
+        return x
 
 def ResNet10(num_classes=1000, only_trunk=False, classifier_bias=True):
     return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], num_classes, only_trunk, classifier_bias)
